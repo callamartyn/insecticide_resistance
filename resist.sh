@@ -1,4 +1,5 @@
 #!/bin/bash
+# testing how to connect with github
 optspec=":r:i:h:s"
 suffix="_R1_001.fastq.gz"
 
