@@ -9,14 +9,15 @@ from Bio import SeqIO
 import numpy as np
 
 # getting a list of the vcf files to analyze
-vcf_files = sys.argv[2:]
+vcf_files = sys.argv[3:]
 # getting the name of the reference, will be used to select relevant gene positions
 ref_name = sys.argv[1].rstrip('.fasta')
 # import fasta sequence and convert to string
 ref_seq = str(SeqIO.read(sys.argv[1], "fasta").seq)
 
 # importing the csv file containing all known resistance snps for all references
-full_table = pd.read_csv('all_vgsg_snps.csv')
+full_table = pd.read_csv(sys.argv[2])
+
 # subsetting just the snps corresponding to the reference used
 snp_table = full_table[(full_table['reference'] == ref_name)]
 # creating a list of tuples from the table, to be used in making a dictionary
@@ -85,25 +86,25 @@ for file in vcf_files:
         # first will check if the snp is in the list of known snps using the dictionary
         if POS in snp_dict:
             # if it is, including the name of the snp (codon) in the output
-            codon = snp_dict[POS]
+            known = snp_dict[POS]
         else:
             # if it is not speficying that this snp is not reported as a resitance snp
-            codon = 'not reported'
-        sample_snps.append([sample, codon, REF, ALT, POS, QUAL, snp_type[0], snp_type[1], snp_type[2], AO, RO])
+            known = 'not reported'
+        sample_snps.append([ref_name, sample, known, REF, ALT, POS, QUAL, snp_type[0], snp_type[1], snp_type[2], AO, RO])
 
 # turning the list from all the samples into a pandas dataframe
-results = pd.DataFrame(sample_snps, columns = ['Sample', 'Codon', 'Ref_Base', 'Alt_Base', 'Position', 'Quality', 'Change_Type', 'Ref_AA', 'Alt_AA', 'Alt_Reads', 'Ref_reads'])
+dataset_snps = pd.DataFrame(sample_snps, columns = ['Reference', 'Sample', 'Known', 'Ref_Base', 'Alt_Base', 'Position', 'Quality', 'Change_Type', 'Ref_AA', 'Alt_AA', 'Alt_Reads', 'Ref_reads'])
 # exporting the dataframe as a csv file in the working directory
-results.to_csv('results.csv')
+dataset_snps.to_csv('dataset_snps')
 # also printing it out for instant gratification
-print(results)
+print(dataset_snps)
 
 # creating new dataframe with only the non-synonymous snps
-non_synonymous = pd.DataFrame(data = (results[(results['Change_Type'] == 'non-synonymous')]))
+non_synonymous = pd.DataFrame(data = (dataset_snps[(dataset_snps['Change_Type'] == 'non-synonymous')]))
 non_synonymous.reset_index(drop=True, inplace=True)
-dataset_snps = non_synonymous.Position.unique()
+unique_snps = non_synonymous.Position.unique()
 new_list = []
-for snp in dataset_snps:
+for snp in unique_snps:
     sample_group = []
     quality_scores = []
     ref_reads = []
@@ -117,13 +118,13 @@ for snp in dataset_snps:
             alt_base = non_synonymous.Alt_Base[i]
             ref_aa = non_synonymous.Ref_AA[i]
             alt_aa = non_synonymous.Alt_AA[i]
-            codon = non_synonymous.Codon[i]
+            codon = non_synonymous.Known[i]
     number = len(sample_group)
     ave_qual = np.mean(quality_scores)
     ave_reads = np.mean(alt_reads)
-    snp_row = [snp, codon, number, ref_base, alt_base, ref_aa, alt_aa, ave_qual, ave_reads, sample_group]
+    snp_row = [ref_name, snp, codon, number, ref_base, alt_base, ref_aa, alt_aa, ave_qual, ave_reads, sample_group]
     new_list.append(snp_row)
-non_synonymous_table = pd.DataFrame(new_list, columns = ['SNP', 'Codon', 'No_Occurrences', 'Ref_Base', 'Alt_Base', 'Ref_AA', 'Alt_AA', 'Average_Quality', 'Average_no_reads', 'Samples_found_in'])
-non_synonymous_table.sort_values(by='No_Occurrences', ascending=False, inplace=True)
-non_synonymous_table.to_csv('non_synonymous_table.csv')
-print(non_synonymous_table)
+non_synonymous_snps = pd.DataFrame(new_list, columns = ['Reference', 'SNP', 'Known', 'No_Occurrences', 'Ref_Base', 'Alt_Base', 'Ref_AA', 'Alt_AA', 'Average_Quality', 'Average_no_reads', 'Samples_found_in'])
+non_synonymous_snps.sort_values(by='No_Occurrences', ascending=False, inplace=True)
+non_synonymous_snps.to_csv('non_synonymous_snps.csv', index=False)
+print(non_synonymous_snps)

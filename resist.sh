@@ -1,7 +1,15 @@
 #!/bin/bash
 # testing how to connect with github
-optspec=":r:i:h:s"
-suffix="_R1_001.fastq.gz"
+
+optspec=":r:i:h:s:t"
+
+MYDIR="$(dirname "$(realpath "$0")")"
+
+snpfinder="${MYDIR}/snpfinder.py"
+
+SNPtable="${MYDIR}/all_vgsc_snps.csv"
+
+
 
 trimmomatic="/home/calla/bin/Trimmomatic-0.38/trimmomatic-0.38.jar"
 adapters="/home/calla/bin/Trimmomatic-0.38/adapters/TruSeq3-PE.fa"
@@ -16,6 +24,7 @@ while getopts "$optspec" option; do
 		r) ref=${OPTARG};; # choose a reference sequence
 		i) input=${OPTARG};; # choose input files
     s) suffix=${OPTARG};; # specify fastq suffix (to be stripped for file name)
+		t) SNPtable=${OPTARG};; # specify table containing snps of interest
 		h) HELP=1;;
 	esac
 done
@@ -40,11 +49,15 @@ ${bold}Command Line Switches:${normal}
 
         -i      Specify input fastq file; specify R1 file only, program will identify R2 file
 
-		This switch is optional and will use all fastq files in directory if unspecified
+This switch is optional and will use all fastq files in directory if unspecified
 
         -s      Specify suffix for R1 files
 
-    This switch is optional and will be set to "_R1_001.fastq.gz" if unspecified
+This switch is optional and will be set to "_R1_001.fastq.gz" if unspecified
+
+	-t Specify a SNP table containing SNPs of interest
+
+This switch is optional and will be set to "all_vgsc_snps.csv" if unspecified
 
 ${bold}Usage:${normal}
 
@@ -68,6 +81,12 @@ then
 	input=$(find . -maxdepth 1 -name "*${suffix}")
 fi
 echo "fastq files are $input"
+
+if [[ -z $SNPtable ]]
+then
+	SNPtable="all_vgsc_snps.csv"
+fi
+echo "using table $SNPtable"
 
 for fastq in $input
 do
@@ -105,4 +124,4 @@ do
 done
 
 files=$(find . -maxdepth 1 -name "*.vcf")
-python $snpfinder $ref $files
+python $snpfinder $ref $SNPtable $files
