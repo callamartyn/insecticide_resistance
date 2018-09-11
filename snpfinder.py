@@ -8,6 +8,11 @@ from Bio import SeqIO
 
 import numpy as np
 
+import os
+
+## #setting script directory so script can access codon table
+script_directory = (os.path.dirname(os.path.realpath(__file__)))
+
 # getting a list of the vcf files to analyze
 vcf_files = sys.argv[3:]
 # getting the name of the reference, will be used to select relevant gene positions
@@ -35,7 +40,8 @@ snp_list.sort(key=lambda tup: tup[0])
 snp_dict = dict(snp_list)
 
 # importing translation table of possible codons and corresponding amino acids
-codon_table = pd.read_csv('codon_table.csv')
+codon_table = pd.read_csv((os.path.join(script_directory, 'codon_table.csv')))
+
 # converting csv file into dictionary (key = codon, value = aa)
 codon_dict = dict(zip(codon_table.codon, codon_table.amino_acid))
 
@@ -126,5 +132,6 @@ for snp in unique_snps:
     new_list.append(snp_row)
 non_synonymous_snps = pd.DataFrame(new_list, columns = ['Reference', 'SNP', 'Known', 'No_Occurrences', 'Ref_Base', 'Alt_Base', 'Ref_AA', 'Alt_AA', 'Average_Quality', 'Average_no_reads', 'Samples_found_in'])
 non_synonymous_snps.sort_values(by='No_Occurrences', ascending=False, inplace=True)
+non_synonymous_snps.reset_index(drop=True, inplace=True)
 non_synonymous_snps.to_csv('non_synonymous_snps.csv', index=False)
 print(non_synonymous_snps)

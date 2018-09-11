@@ -6,7 +6,7 @@ optspec=":r:i:h:s:t"
 MYDIR="$(dirname "$(realpath "$0")")"
 
 snpfinder="${MYDIR}/snpfinder.py"
-
+echo $snpfinder
 SNPtable="${MYDIR}/all_vgsc_snps.csv"
 
 
@@ -124,4 +124,5 @@ do
 done
 
 files=$(find . -maxdepth 1 -name "*.vcf")
-python $snpfinder $ref $SNPtable $files
+
+python "${MYDIR}/snpfinder.py" $ref $SNPtable $files
